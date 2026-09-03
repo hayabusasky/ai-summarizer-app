@@ -1,0 +1,44 @@
+name: Auto-post gold-relevant economic news
+
+on:
+  schedule:
+    # 08:00 and 18:00 JST (UTC+9) == 23:00 and 09:00 UTC
+    - cron: "0 23 * * *"
+    - cron: "0 9 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - run: npm install
+
+      - run: npm start
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          POST_TARGETS: ${{ vars.POST_TARGETS || 'both' }}
+          X_API_KEY: ${{ secrets.X_API_KEY }}
+          X_API_SECRET: ${{ secrets.X_API_SECRET }}
+          X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
+          X_ACCESS_SECRET: ${{ secrets.X_ACCESS_SECRET }}
+          THREADS_USER_ID: ${{ secrets.THREADS_USER_ID }}
+          THREADS_ACCESS_TOKEN: ${{ secrets.THREADS_ACCESS_TOKEN }}
+
+      - name: Persist dedup state
+        run: |
+          if ! git diff --quiet -- data/posted.json; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add data/posted.json
+            git commit -m "chore: update posted-articles state [skip ci]"
+            git push
+          fi

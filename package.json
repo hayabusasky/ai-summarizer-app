@@ -1,0 +1,23 @@
+{
+  "name": "ai-summarizer-app",
+  "version": "0.1.0",
+  "description": "Economic news -> AI summary -> X/Threads auto-posting pipeline for gold-sales lead generation",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "dry-run": "DRY_RUN=true tsx src/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.68.0",
+    "dotenv": "^16.4.5",
+    "rss-parser": "^3.13.0",
+    "twitter-api-v2": "^1.19.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}

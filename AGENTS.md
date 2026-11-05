@@ -21,6 +21,7 @@ AIコーディングエージェント(Codex / Claude Code など)向けのプ�
 | `src/types.ts` | 共通の型定義 |
 | `data/posted.json` | 投稿済み記事の履歴(GitHub Actionsが自動更新) |
 | `.github/workflows/post.yml` | 1日2回(JST 8時・18時)の自動実行 |
+| `reel/` | キャラクター付きリール動画の生成ツール(Python + ffmpeg)。使い方は `reel/README.md` |
 
 ## コマンド
 
@@ -29,6 +30,7 @@ npm install          # 依存関係のインストール
 npm run typecheck    # 型チェック(変更後は必ず実行)
 npm run dry-run      # 実際には投稿せず、生成文面をコンソールに表示
 npm start            # 本番実行(実際にSNSへ投稿される)
+python3 reel/make_reel.py reel/scripts/talmud_money.json out/talmud_money.mp4  # リール動画の生成
 ```
 
 テストフレームワークは未導入です。変更後は最低限 `npm run typecheck` を通してください。

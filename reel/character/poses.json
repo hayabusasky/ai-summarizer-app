@@ -1,0 +1,10 @@
+{
+  "sheet": "sheet.webp",
+  "columns": [0, 433, 852, 1248, 1672],
+  "rows": [0, 281, 548, 768],
+  "names": [
+    ["smile", "explain", "think", "shrug"],
+    ["point", "talk", "smug", "explain2"],
+    ["hand_chest", "talk2", "hands_clasped", "explain3"]
+  ]
+}

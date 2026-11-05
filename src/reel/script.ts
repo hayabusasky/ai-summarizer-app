@@ -50,7 +50,8 @@ export function loadPoseNames(): string[] {
   return cfg.names.flat();
 }
 
-const client = new Anthropic();
+// APIキーなしでもキュー台本だけで動くよう、クライアントは使うときに作る
+let client: Anthropic | undefined;
 
 function systemPrompt(poses: string[]): string {
   const poseList = poses.map((p) => `- ${p}: ${POSE_DESCRIPTIONS[p] ?? ""}`).join("\n");
@@ -97,6 +98,7 @@ function extractJson(text: string): unknown {
 }
 
 async function ask(userMessage: string, poses: string[]): Promise<any> {
+  client ??= new Anthropic();
   const response = await client.messages.create({
     model: CLAUDE_MODEL,
     max_tokens: 2048,
@@ -113,11 +115,11 @@ function clamp(n: number, lo: number, hi: number): number {
 }
 
 // Claudeの出力を検証し、レンダラーが確実に扱える形に整える。
-export function sanitize(raw: any, poses: string[], note: { index: number; text: string }): GeneratedReel {
-  if (!Array.isArray(raw?.scenes) || raw.scenes.length === 0) {
+function cleanScenes(rawScenes: unknown, poses: string[]): ReelScene[] {
+  if (!Array.isArray(rawScenes) || rawScenes.length === 0) {
     throw new Error("reel script has no scenes");
   }
-  const scenes: ReelScene[] = raw.scenes.slice(0, 6).map((s: any) => {
+  const scenes: ReelScene[] = rawScenes.slice(0, 6).map((s: any) => {
     const headline = (Array.isArray(s?.headline) ? s.headline : [])
       .filter((l: unknown): l is string => typeof l === "string" && l.trim() !== "")
       .slice(0, 4);
@@ -129,11 +131,24 @@ export function sanitize(raw: any, poses: string[], note: { index: number; text:
         pose: poses.includes(l.pose) ? l.pose : "explain",
         secs: clamp(Number(l.secs) || 3, 1.5, 5),
       }));
-    return { headline, lines };
+    const scene: ReelScene = { headline, lines };
+    if (typeof s?.note === "string" && s.note.trim() !== "") scene.note = s.note.trim();
+    return scene;
   });
   const usable = scenes.filter((s) => s.lines.length > 0);
   if (usable.length === 0) throw new Error("reel script has no spoken lines");
+  return usable;
+}
 
+// Claude Code が書いて reel/queue/ に置いた台本を検証する(出典の note はそのまま使う)。
+export function sanitizeQueued(raw: any, poses: string[]): GeneratedReel {
+  const caption = typeof raw?.caption === "string" ? raw.caption.trim() : "";
+  if (!caption) throw new Error("queued reel has no caption");
+  return { script: { footer: REEL_FOOTER, scenes: cleanScenes(raw?.scenes, poses) }, caption };
+}
+
+export function sanitize(raw: any, poses: string[], note: { index: number; text: string }): GeneratedReel {
+  const usable = cleanScenes(raw?.scenes, poses);
   const idx = clamp(Number.isInteger(note.index) ? note.index : 0, 0, usable.length - 1);
   usable[idx].note = note.text;
 

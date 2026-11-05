@@ -7,14 +7,20 @@ const CAPTION_END = "<!-- caption:end -->";
 
 export const APPROVE_LABEL = "reel-approved";
 
+export type ReelSourceKind = "queued" | "news" | "teaching";
+
 export function renderIssueBody(args: {
-  kind: "news" | "teaching";
+  kind: ReelSourceKind;
   label: string;
   ref: string;
   caption: string;
   script: ReelScript;
 }): string {
-  const source = args.kind === "news" ? `ニュース: [${args.label}](${args.ref})` : `教え: ${args.label}(${args.ref})`;
+  const source = {
+    queued: `Claude Codeが書いた台本: ${args.label}(\`reel/done/${args.ref}\`)`,
+    news: `ニュース: [${args.label}](${args.ref})`,
+    teaching: `教え: ${args.label}(${args.ref})`,
+  }[args.kind];
   return `チビボスのリール動画ができました。
 
 **元ネタ** ${source}

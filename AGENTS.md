@@ -36,7 +36,8 @@ npm run typecheck    # 型チェック(変更後は必ず実行)
 npm run dry-run      # 実際には投稿せず、生成文面をコンソールに表示
 npm start            # 本番実行(実際にSNSへ投稿される)
 python3 reel/make_reel.py reel/scripts/talmud_money.json out/talmud_money.mp4  # 台本からリール動画を作る
-npm run reel:generate  # Claudeでリール台本を作り out/reel/ に書く(ANTHROPIC_API_KEY が必要)
+npm run reel:check     # reel/queue/ の台本をチェック(台本を書いたら必ず実行)
+npm run reel:generate  # reel/queue/ から台本を1本取り出し out/reel/ に書く(reel/done/ へ移動する)
 npm run reel:render    # out/reel/script.json を動画にする
 DRY_RUN=true npm run reel:publish  # 投稿せずに投稿内容を表示
 ```
@@ -54,6 +55,20 @@ DRY_RUN=true npm run reel:publish  # 投稿せずに投稿内容を表示
 - **コンプライアンス上の制約を緩めない。** `summarize.ts` のプロンプトにある「断定的な投資助言・価格予測をしない」制限や、`config.ts` の免責文(`DISCLAIMER`)を削除・弱体化しないでください。変更が必要な場合は人間に確認を取ります。
 - ES Modules(`"type": "module"`)なので、相対importには `.js` 拡張子を付けます(例: `import { x } from "./config.js"`)。
 - TypeScript は `strict` モードです。`any` の多用は避けてください。
+
+## リール台本を書くとき(エージェントの仕事)
+
+チビボスのリール台本は、Claude API ではなく **エージェント(Claude Code / Codex)が書いて `reel/queue/` に置く**運用です。毎日12時のワークフローがファイル名順に1本ずつ取り出して動画にし、確認用Issueを作ります。
+
+- ファイル名は `NNN_<内容>.json`(連番。続きの番号を使う)。形式は `reel/queue/` の既存ファイルを参照: `title` / `caption` / `scenes[]`(`headline` / `note` / `lines[]` = `text`・`pose`・`secs`)
+- 4〜5シーン、合計18〜35秒。見出しは1行12文字以内、セリフは1行18文字以内・2行まで
+- ポーズ名は `reel/character/poses.json` の `names` から選ぶ(一覧と意味は `reel/README.md`)
+- 「お金の教え」の引用と出典は `src/reel/teachings.ts` の文言をそのまま使う。新しい教えを使う場合は、先に出典を確認して `teachings.ts` に追加し、人間に確認を取る
+- ニュースを題材にする場合は、記事にない数字や事実を書かない。`note` に `出典：<媒体名>` を入れる
+- 断定的な投資助言(「今買うべき」「必ず上がる」等)・価格予測・過度に不安を煽る表現は書かない
+- 民族や宗教の属性とお金を結びつける表現(「ユダヤ人は金持ち」等)は書かない
+- キャプションに免責文・DM誘導文は書かない(コードが自動で付ける)
+- 書いたら `npm run reel:check` でエラー0を確認し、`python3 reel/make_reel.py reel/queue/<file>.json out/check.mp4` で見た目も確認する
 
 ## 既知の注意点
 

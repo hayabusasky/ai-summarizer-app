@@ -11,6 +11,8 @@ python3 reel/make_reel.py reel/scripts/talmud_money.json out/talmud_money.mp4
 必要なもの: Python 3 と Pillow(`pip install pillow`)、ffmpeg、日本語フォント(IPAゴシック: `/usr/share/fonts/opentype/ipafont-gothic/ipag.ttf`)。
 出力先の `out/` はgit管理外です。
 
+毎日の自動投稿用の台本は `reel/queue/` に置きます(形式は同じで、`title` と `caption` が加わります)。ルールはリポジトリ直下の `AGENTS.md` の「リール台本を書くとき」を参照してください。
+
 ## 画面構成
 
 ```

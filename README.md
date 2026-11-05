@@ -41,9 +41,10 @@ npm start               # 実際に投稿する
 キャラクター「チビボス」が話す縦型リール動画を毎日1本自動で作り、**あなたが確認してOKを出したものだけ**をInstagramリールに投稿します。
 
 ```
+Claude Code(またはCodex)が台本を書いて reel/queue/ に置く
+                ↓
 毎日12時(JST) reel-generate.yml
-  ニュース(金に関係するもの) → なければ「お金の教え」シリーズ
-  → Claudeが台本とキャプションを作成 → 動画をレンダリング
+  reel/queue/ から台本を1本取り出す(使った台本は reel/done/ へ) → 動画をレンダリング
   → 確認用のIssueを作成(ラベル: reel)
                 ↓
 あなたが確認: Actionsの「reel-preview」で動画を見る/必要ならIssue本文を編集
@@ -51,6 +52,8 @@ npm start               # 実際に投稿する
 ラベル「reel-approved」を付ける → reel-publish.yml が動画を作り直してInstagramに投稿 → Issueを閉じる
 ```
 
+- 台本のストックが切れると、その日は何も作られません。Claude Codeに「リール台本を〇本書いて」「このニュースでリール台本を書いて」と頼んで補充してください。
+- 台本をClaude APIで自動作成したい場合は、Variable `REEL_API_FALLBACK=true` と Secret `ANTHROPIC_API_KEY` を設定すると、ストック切れのときだけAPIで作成します(既定はオフ)。
 - 承認ラベルが効くのは**リポジトリのオーナー本人が付けたときだけ**です。
 - 投稿したくない場合は、Issueをそのまま閉じればOKです。
 - 「お金の教え」の引用と出典は `src/reel/teachings.ts` で固定しています(Claudeに出典を作らせないため)。追加するときは出典を確認してから書いてください。

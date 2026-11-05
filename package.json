@@ -11,7 +11,8 @@
     "reel:generate": "tsx src/reel/generate.ts",
     "reel:extract": "tsx src/reel/extract.ts",
     "reel:publish": "tsx src/reel/publish.ts",
-    "reel:render": "python3 reel/make_reel.py out/reel/script.json out/reel/reel.mp4"
+    "reel:render": "python3 reel/make_reel.py out/reel/script.json out/reel/reel.mp4",
+    "reel:check": "tsx src/reel/check.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.68.0",

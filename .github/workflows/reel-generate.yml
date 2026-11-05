@@ -36,21 +36,29 @@ jobs:
 
       - run: npm install
 
-      - name: Write reel script with Claude
+      # reel/queue/ にある台本(Claude Codeが書いたもの)を1本取り出す。
+      # キューが空なら generated=false で以降の手順をスキップする。
+      # REEL_API_FALLBACK=true のときだけ、空のときにClaude APIで台本を自動作成する。
+      - name: Pick next reel script
+        id: gen
         run: npm run reel:generate
         env:
+          REEL_API_FALLBACK: ${{ vars.REEL_API_FALLBACK || 'false' }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
       - name: Render preview video
+        if: steps.gen.outputs.generated == 'true'
         run: python3 reel/make_reel.py out/reel/script.json out/reel/reel.mp4
 
       - uses: actions/upload-artifact@v4
+        if: steps.gen.outputs.generated == 'true'
         with:
           name: reel-preview
           path: out/reel/reel.mp4
           retention-days: 14
 
       - name: Open review issue
+        if: steps.gen.outputs.generated == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
@@ -60,12 +68,13 @@ jobs:
           printf '\n---\n**プレビュー動画:** %s の Artifacts にある `reel-preview`\n' "$RUN_URL" >> out/reel/issue.md
           gh issue create --title "$(cat out/reel/title.txt)" --body-file out/reel/issue.md --label reel
 
-      - name: Persist reel state
+      - name: Persist reel state and queue
+        if: steps.gen.outputs.generated == 'true'
         run: |
-          if ! git diff --quiet -- data/reels.json || [ -n "$(git status --porcelain -- data/reels.json)" ]; then
+          if [ -n "$(git status --porcelain -- data/reels.json reel/queue reel/done)" ]; then
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add data/reels.json
+            git add -A -- data/reels.json reel/queue reel/done
             git commit -m "chore: update reel state [skip ci]"
             git pull --rebase
             git push

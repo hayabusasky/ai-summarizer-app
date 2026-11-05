@@ -60,7 +60,7 @@ DRY_RUN=true npm run reel:publish  # 投稿せずに投稿内容を表示
 
 チビボスのリール台本は、Claude API ではなく **エージェント(Claude Code / Codex)が書いて `reel/queue/` に置く**運用です。毎日12時のワークフローがファイル名順に1本ずつ取り出して動画にし、確認用Issueを作ります。
 
-- ファイル名は `NNN_<内容>.json`(連番。続きの番号を使う)。形式は `reel/queue/` の既存ファイルを参照: `title` / `caption` / `scenes[]`(`headline` / `note` / `lines[]` = `text`・`pose`・`secs`)
+- ファイル名は `NNN_<内容>.json`(連番。続きの番号を使う)。鮮度が大事なニュース台本は `000_news_<内容>.json` にして、次の回に優先して使われるようにする。形式は `reel/queue/` の既存ファイルを参照: `title` / `caption` / `scenes[]`(`headline` / `note` / `lines[]` = `text`・`pose`・`secs`)
 - 4〜5シーン、合計18〜35秒。見出しは1行12文字以内、セリフは1行18文字以内・2行まで
 - ポーズ名は `reel/character/poses.json` の `names` から選ぶ(一覧と意味は `reel/README.md`)
 - 「お金の教え」の引用と出典は `src/reel/teachings.ts` の文言をそのまま使う。新しい教えを使う場合は、先に出典を確認して `teachings.ts` に追加し、人間に確認を取る

@@ -12,6 +12,7 @@ export interface ReelLine {
 }
 
 export interface ReelScene {
+  image?: string; // 背景画像(リポジトリ直下からの相対パス)。Codexが作成する
   headline: string[];
   note?: string;
   lines: ReelLine[];
@@ -28,6 +29,9 @@ export interface GeneratedReel {
 }
 
 export const REEL_FOOTER = "※本動画は解説であり、投資助言ではありません。";
+
+// 動画の第一声は必ずこれ(固定)
+export const GREETING = "よう、ボスだ。";
 
 const POSE_DESCRIPTIONS: Record<string, string> = {
   smile: "にっこり(あいさつ・締め)",
@@ -55,7 +59,7 @@ let client: Anthropic | undefined;
 
 function systemPrompt(poses: string[]): string {
   const poseList = poses.map((p) => `- ${p}: ${POSE_DESCRIPTIONS[p] ?? ""}`).join("\n");
-  return `あなたは純金の販売事業者のSNSで、キャラクター「チビボス」(サングラスの頼れる兄貴分)が話す縦型リール動画の台本を書きます。
+  return `あなたは純金の販売事業者のSNSで、キャラクター「ボス」(サングラスの頼れる兄貴分)が話す縦型リール動画の台本を書きます。
 
 動画の構成:
 - 4〜5シーン、合計18〜35秒
@@ -65,7 +69,9 @@ function systemPrompt(poses: string[]): string {
 - lines[].secs: 1.5〜5秒。文字数が多いほど長く(目安: 1秒あたり7文字)
 - lines[].pose: 次のいずれか
 ${poseList}
-- 最後のシーンは「詳しい解説はDMへ」につなげる締めにする
+- 最初のセリフは必ず「${GREETING}」で始める(例: "${GREETING}\\n今日は〜の話だ")
+- 最後のセリフは「じゃあ、またな。」で締める
+- DMへの誘導は書かない
 
 厳守事項:
 - 「今買うべき」「必ず上がる」等の断定的な投資助言・価格予測は書かない
@@ -133,10 +139,16 @@ function cleanScenes(rawScenes: unknown, poses: string[]): ReelScene[] {
       }));
     const scene: ReelScene = { headline, lines };
     if (typeof s?.note === "string" && s.note.trim() !== "") scene.note = s.note.trim();
+    if (typeof s?.image === "string" && s.image.trim() !== "") scene.image = s.image.trim();
     return scene;
   });
   const usable = scenes.filter((s) => s.lines.length > 0);
   if (usable.length === 0) throw new Error("reel script has no spoken lines");
+  // 第一声が「よう、ボスだ。」で始まっていなければ、あいさつを先頭に足す
+  const first = usable[0].lines[0];
+  if (!first.text.startsWith(GREETING)) {
+    usable[0].lines.unshift({ text: GREETING, pose: "smile", secs: 1.5 });
+  }
   return usable;
 }
 

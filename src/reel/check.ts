@@ -1,12 +1,13 @@
 // reel/queue/ の台本をチェックする。台本を書いたら必ず実行する: npm run reel:check
 import fs from "node:fs/promises";
 import path from "node:path";
-import { loadPoseNames, sanitizeQueued } from "./script.js";
+import fsSync from "node:fs";
+import { GREETING, loadPoseNames, sanitizeQueued } from "./script.js";
 
 const QUEUE_DIR = path.join(process.cwd(), "reel", "queue");
 const HEADLINE_MAX = 12; // 見出し1行の目安文字数(* は数えない)
 const LINE_MAX = 18; // セリフ1行の目安文字数
-const BANNED = ["必ず上が", "絶対", "今買うべき", "今すぐ買", "儲かる", "損しない", "ユダヤ人は"];
+const BANNED = ["必ず上が", "絶対", "今買うべき", "今すぐ買", "儲かる", "損しない", "ユダヤ人は", "DM"];
 
 async function main(): Promise<void> {
   const poses = loadPoseNames();
@@ -24,7 +25,14 @@ async function main(): Promise<void> {
       if (total < 15 || total > 45) notes.push(`合計 ${total.toFixed(1)} 秒(目安 18〜35 秒)`);
       if (!script.scenes.some((s) => s.note)) notes.push("出典(note)のあるシーンがない");
 
+      const firstText = String(raw.scenes?.[0]?.lines?.[0]?.text ?? "");
+      if (!firstText.startsWith(GREETING)) problems.push(`最初のセリフが「${GREETING}」で始まっていない`);
+
       raw.scenes.forEach((s: any, i: number) => {
+        if (!s.image_prompt) notes.push(`シーン${i + 1} 背景画像の指示(image_prompt)がない`);
+        if (s.image && !fsSync.existsSync(path.join(process.cwd(), s.image))) {
+          notes.push(`シーン${i + 1} 背景画像が未作成(Codexで作成): ${s.image}`);
+        }
         for (const h of s.headline ?? []) {
           if (String(h).replace(/\*/g, "").length > HEADLINE_MAX) notes.push(`シーン${i + 1} 見出しが長い: ${h}`);
         }

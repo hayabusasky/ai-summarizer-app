@@ -44,6 +44,7 @@ jobs:
         run: npm run reel:generate
         env:
           REEL_API_FALLBACK: ${{ vars.REEL_API_FALLBACK || 'false' }}
+          REEL_ALLOW_NO_BG: ${{ vars.REEL_ALLOW_NO_BG || 'false' }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
       - name: Render preview video

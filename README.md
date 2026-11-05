@@ -41,10 +41,12 @@ npm start               # 実際に投稿する
 キャラクター「チビボス」が話す縦型リール動画を毎日1本自動で作り、**あなたが確認してOKを出したものだけ**をInstagramリールに投稿します。
 
 ```
-Claude Code(またはCodex)が台本を書いて reel/queue/ に置く
+Claude Code が台本を書いて reel/queue/ に置く(背景画像の指示つき)
+                ↓
+Codex が背景画像を作って reel/backgrounds/ に置く
                 ↓
 毎日12時(JST) reel-generate.yml
-  reel/queue/ から台本を1本取り出す(使った台本は reel/done/ へ) → 動画をレンダリング
+  reel/queue/ から背景画像が揃った台本を1本取り出す(使った台本は reel/done/ へ) → 動画をレンダリング
   → 確認用のIssueを作成(ラベル: reel)
                 ↓
 あなたが確認: Actionsの「reel-preview」で動画を見る/必要ならIssue本文を編集
@@ -52,6 +54,8 @@ Claude Code(またはCodex)が台本を書いて reel/queue/ に置く
 ラベル「reel-approved」を付ける → reel-publish.yml が動画を作り直してInstagramに投稿 → Issueを閉じる
 ```
 
+- 動画の第一声は「よう、ボスだ。」で固定です。リールではDMへの誘導はしません(キャプションには免責文だけが付きます)。
+- 背景画像が揃っていない台本は飛ばされます。Codexに「AGENTS.mdの手順でリールの背景画像を作って」と頼んでください。どうしても画像なしで出したい日は、Variable `REEL_ALLOW_NO_BG=true` でグラデーション背景のまま動画にできます。
 - 台本のストックが切れると、その日は何も作られません。Claude Codeに「リール台本を〇本書いて」「このニュースでリール台本を書いて」と頼んで補充してください。
 - 台本をClaude APIで自動作成したい場合は、Variable `REEL_API_FALLBACK=true` と Secret `ANTHROPIC_API_KEY` を設定すると、ストック切れのときだけAPIで作成します(既定はオフ)。
 - 承認ラベルが効くのは**リポジトリのオーナー本人が付けたときだけ**です。

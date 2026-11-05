@@ -99,11 +99,23 @@ def cover(img: Image.Image, w: int, h: int) -> Image.Image:
     return img.crop((l, t, l + w, t + h))
 
 
-def scene_bg(image: str | None, base: Path) -> Image.Image:
+def resolve_image(image: str | None, base: Path) -> Path | None:
+    """台本からの相対パス → リポジトリ直下からの相対パスの順に探す。見つからなければ None。"""
     if not image:
+        return None
+    for cand in (base / image, Path.cwd() / image, HERE.parent / image):
+        if cand.is_file():
+            return cand
+    print(f"warning: background image not found, using gradient: {image}", file=sys.stderr)
+    return None
+
+
+def scene_bg(image: str | None, base: Path) -> Image.Image:
+    path = resolve_image(image, base)
+    if path is None:
         bg = gradient_bg()
     else:
-        bg = cover(Image.open(base / image).convert("RGB"), W, H)
+        bg = cover(Image.open(path).convert("RGB"), W, H)
         # 文字とキャラが読みやすいよう暗くする
         bg = Image.blend(bg, Image.new("RGB", (W, H), (0, 0, 0)), 0.45)
     return cover(bg, int(W * 1.12), int(H * 1.12))

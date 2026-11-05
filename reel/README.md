@@ -50,7 +50,8 @@ python3 reel/make_reel.py reel/scripts/talmud_money.json out/talmud_money.mp4
 |---|---|---|
 | `footer` | | 全シーンの最下部に出す文。免責文に使う |
 | `bgm` | | BGMの音声ファイル(台本JSONからの相対パス)。省略すると無音 |
-| `scenes[].image` | | 背景画像(台本JSONからの相対パス)。省略すると金色のグラデーション背景 |
+| `scenes[].image` | | 背景画像(台本JSONからの相対パス、またはリポジトリ直下からの相対パス)。省略・未作成なら金色のグラデーション背景 |
+| `scenes[].image_prompt` | | 背景画像の指示(Codexが画像を作るときに使う。レンダラーは使わない) |
 | `scenes[].headline` | | 見出しの行のリスト。`*〜*` で囲んだ部分が金色になる |
 | `scenes[].note` | | 見出しの下に出す小さな注記(出典など) |
 | `scenes[].lines[]` | ○ | セリフ。`text`(`\n` で改行)、`pose`、`secs`(表示秒数) |

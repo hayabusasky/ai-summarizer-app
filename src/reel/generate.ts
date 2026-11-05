@@ -2,14 +2,15 @@
 // 動画のレンダリングと Issue 作成は .github/workflows/reel-generate.yml が行う。
 //
 // 台本の出どころ(優先順):
-//   1. reel/queue/*.json  … Claude Code が書いて置いた台本(ファイル名順に1本)。使ったら reel/done/ へ移す
+//   1. reel/queue/*.json  … Claude Code が書いて置いた台本(ファイル名順に、背景画像が揃っているものを1本)。使ったら reel/done/ へ移す
 //   2. REEL_API_FALLBACK=true のときだけ、Claude API でニュース/教えから台本を自動作成
 // どちらもなければ何もせず終了する(generated=false)。
 import "dotenv/config";
 import fs from "node:fs/promises";
+import { existsSync } from "node:fs";
 import path from "node:path";
 import { collectArticles } from "../collect.js";
-import { DISCLAIMER, DM_CTA } from "../config.js";
+import { DISCLAIMER } from "../config.js";
 import { loadPoseNames, reelFromArticle, reelFromTeaching, sanitizeQueued, type GeneratedReel } from "./script.js";
 import { TEACHINGS } from "./teachings.js";
 import { loadReelState, saveReelState } from "./state.js";
@@ -21,6 +22,8 @@ const QUEUE_DIR = path.join(ROOT, "reel", "queue");
 const DONE_DIR = path.join(ROOT, "reel", "done");
 const MAX_NEWS_CHECKS = Number(process.env.REEL_MAX_NEWS_CHECKS ?? 3);
 const API_FALLBACK = process.env.REEL_API_FALLBACK === "true";
+// true にすると背景画像が未作成でも(グラデーション背景で)動画にする
+const ALLOW_NO_BG = process.env.REEL_ALLOW_NO_BG === "true";
 
 interface Picked {
   reel: GeneratedReel;
@@ -37,8 +40,23 @@ async function pickQueued(): Promise<Picked | null> {
     return null;
   }
   if (files.length === 0) return null;
-  const file = files[0];
-  const raw = JSON.parse(await fs.readFile(path.join(QUEUE_DIR, file), "utf-8"));
+  // 背景画像(Codexが作成)がすべて揃っている台本だけを使う。揃っていなければ次の台本へ
+  let file: string | undefined;
+  let raw: any;
+  for (const f of files) {
+    const candidate = JSON.parse(await fs.readFile(path.join(QUEUE_DIR, f), "utf-8"));
+    const missing = (candidate.scenes ?? [])
+      .map((s: any) => s?.image)
+      .filter((img: unknown): img is string => typeof img === "string" && img !== "")
+      .filter((img: string) => !existsSync(path.join(ROOT, img)));
+    if (missing.length === 0 || ALLOW_NO_BG) {
+      file = f;
+      raw = candidate;
+      break;
+    }
+    console.log(`[reel] skip ${f}: waiting for ${missing.length} background image(s) from Codex`);
+  }
+  if (!file) return null;
   const reel = sanitizeQueued(raw, loadPoseNames());
   await fs.mkdir(DONE_DIR, { recursive: true });
   await fs.rename(path.join(QUEUE_DIR, file), path.join(DONE_DIR, file));
@@ -81,12 +99,13 @@ async function main(): Promise<void> {
     picked = (await pickNews(new Set(state.usedLinks))) ?? (await pickTeaching(state.usedTeachings));
   }
   if (!picked) {
-    console.log("[reel] queue is empty (reel/queue/). Ask Claude Code to write more scripts. Nothing generated.");
+    console.log("[reel] no ready script in reel/queue/ (empty, or waiting for background images). Nothing generated.");
     await setOutput(false);
     return;
   }
 
-  const caption = `${picked.reel.caption}${DM_CTA}${DISCLAIMER}`.slice(0, 2200);
+  // リールはDM誘導なし(免責文だけ付ける)
+  const caption = `${picked.reel.caption}${DISCLAIMER}`.slice(0, 2200);
   await fs.mkdir(OUT_DIR, { recursive: true });
   await fs.writeFile(path.join(OUT_DIR, "script.json"), JSON.stringify(picked.reel.script, null, 2) + "\n");
   await fs.writeFile(path.join(OUT_DIR, "caption.txt"), caption + "\n");

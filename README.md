@@ -36,6 +36,37 @@ npm start               # 実際に投稿する
 
 `.github/workflows/post.yml` が1日2回(JST 8時・18時)自動実行します。リポジトリの **Settings → Secrets and variables → Actions** に上記の認証情報をSecretsとして登録してください。投稿済み記事の重複防止用データ(`data/posted.json`)はワークフローが自動でコミットし直します。
 
+## チビボスのリール動画(Instagram・確認してから投稿)
+
+キャラクター「チビボス」が話す縦型リール動画を毎日1本自動で作り、**あなたが確認してOKを出したものだけ**をInstagramリールに投稿します。
+
+```
+毎日12時(JST) reel-generate.yml
+  ニュース(金に関係するもの) → なければ「お金の教え」シリーズ
+  → Claudeが台本とキャプションを作成 → 動画をレンダリング
+  → 確認用のIssueを作成(ラベル: reel)
+                ↓
+あなたが確認: Actionsの「reel-preview」で動画を見る/必要ならIssue本文を編集
+                ↓
+ラベル「reel-approved」を付ける → reel-publish.yml が動画を作り直してInstagramに投稿 → Issueを閉じる
+```
+
+- 承認ラベルが効くのは**リポジトリのオーナー本人が付けたときだけ**です。
+- 投稿したくない場合は、Issueをそのまま閉じればOKです。
+- 「お金の教え」の引用と出典は `src/reel/teachings.ts` で固定しています(Claudeに出典を作らせないため)。追加するときは出典を確認してから書いてください。
+- 動画の見た目やポーズは `reel/README.md` を参照してください。
+
+### 追加で必要な設定
+
+| 種類 | 名前 | 内容 |
+|---|---|---|
+| Secret | `IG_USER_ID` | InstagramビジネスアカウントのID |
+| Secret | `IG_ACCESS_TOKEN` | `instagram_content_publish` 権限付きの長期アクセストークン |
+| Variable(任意) | `IG_GRAPH_HOST` | Instagramログインで取ったトークンなら `graph.instagram.com`(既定は `graph.facebook.com`) |
+| Variable(任意) | `REEL_DRY_RUN` | `true` にすると承認しても実際には投稿しない(テスト用) |
+
+Instagram APIへの接続はこの開発環境から確認できていません。最初は `REEL_DRY_RUN=true` で流れを確認し、その後1本だけ本番投稿して動作を確かめてください。
+
 ## ニュースソースの設定
 
 `src/config.ts` の `FEED_SOURCES` にRSSフィードを追加・削除できます。初期値はいくつかの一般的な経済ニュースRSSを設定していますが、**このプロジェクトの開発環境からは外部ネットワークに接続できず疎通確認ができていません**。本番投入前に一度動作確認をお願いします。

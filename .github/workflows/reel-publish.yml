@@ -1,0 +1,77 @@
+name: Publish approved reel to Instagram
+
+on:
+  issues:
+    types: [labeled]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: reel-publish-${{ github.event.issue.number }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    # リポジトリのオーナー本人が、リール確認用Issueに承認ラベルを付けたときだけ動く
+    if: >-
+      github.event.label.name == 'reel-approved' &&
+      contains(github.event.issue.labels.*.name, 'reel') &&
+      github.actor == github.repository_owner
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install render dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg fonts-ipafont-gothic
+          pip install pillow
+
+      - run: npm install
+
+      - name: Read script and caption from the issue
+        run: npm run reel:extract
+
+      - name: Render final video
+        run: python3 reel/make_reel.py out/reel/script.json out/reel/reel.mp4
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reel-final
+          path: out/reel/reel.mp4
+          retention-days: 30
+
+      - name: Post to Instagram
+        id: post
+        run: npm run reel:publish
+        env:
+          IG_USER_ID: ${{ secrets.IG_USER_ID }}
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          IG_GRAPH_HOST: ${{ vars.IG_GRAPH_HOST || 'graph.facebook.com' }}
+          DRY_RUN: ${{ vars.REEL_DRY_RUN || 'false' }}
+
+      - name: Report result on the issue
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE: ${{ github.event.issue.number }}
+          OUTCOME: ${{ steps.post.outcome }}
+          MEDIA_ID: ${{ steps.post.outputs.media_id }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ "$OUTCOME" = "success" ]; then
+            gh issue comment "$ISSUE" --body "Instagramに投稿しました(media id: ${MEDIA_ID:-dry-run})。実行ログ: $RUN_URL"
+            gh issue close "$ISSUE"
+          else
+            gh issue comment "$ISSUE" --body "投稿に失敗しました。ログを確認してください: $RUN_URL ラベル \`reel-approved\` を外して付け直すと再実行します。"
+          fi

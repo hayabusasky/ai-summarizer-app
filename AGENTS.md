@@ -21,7 +21,12 @@ AIコーディングエージェント(Codex / Claude Code など)向けのプ�
 | `src/types.ts` | 共通の型定義 |
 | `data/posted.json` | 投稿済み記事の履歴(GitHub Actionsが自動更新) |
 | `.github/workflows/post.yml` | 1日2回(JST 8時・18時)の自動実行 |
-| `reel/` | キャラクター付きリール動画の生成ツール(Python + ffmpeg)。使い方は `reel/README.md` |
+| `reel/` | キャラクター付きリール動画のレンダラー(Python + ffmpeg)。使い方は `reel/README.md` |
+| `src/reel/` | リール台本の自動生成(Claude)、確認用Issueの作成・読み取り、Instagram投稿 |
+| `src/reel/teachings.ts` | 「お金の教え」の引用と出典(固定。Claudeに出典を作らせない) |
+| `src/publish/instagram.ts` | Instagramリール投稿(resumable upload) |
+| `data/reels.json` | リールに使ったニュース・教えの履歴(GitHub Actionsが自動更新) |
+| `.github/workflows/reel-generate.yml` / `reel-publish.yml` | リールの毎日生成→Issueで確認→承認ラベルで投稿 |
 
 ## コマンド
 
@@ -30,7 +35,10 @@ npm install          # 依存関係のインストール
 npm run typecheck    # 型チェック(変更後は必ず実行)
 npm run dry-run      # 実際には投稿せず、生成文面をコンソールに表示
 npm start            # 本番実行(実際にSNSへ投稿される)
-python3 reel/make_reel.py reel/scripts/talmud_money.json out/talmud_money.mp4  # リール動画の生成
+python3 reel/make_reel.py reel/scripts/talmud_money.json out/talmud_money.mp4  # 台本からリール動画を作る
+npm run reel:generate  # Claudeでリール台本を作り out/reel/ に書く(ANTHROPIC_API_KEY が必要)
+npm run reel:render    # out/reel/script.json を動画にする
+DRY_RUN=true npm run reel:publish  # 投稿せずに投稿内容を表示
 ```
 
 テストフレームワークは未導入です。変更後は最低限 `npm run typecheck` を通してください。
@@ -39,7 +47,9 @@ python3 reel/make_reel.py reel/scripts/talmud_money.json out/talmud_money.mp4  #
 
 - **`npm start` は実行しない。** 実際にSNSへ投稿されてしまいます。動作確認は `npm run dry-run` を使ってください(ただし `ANTHROPIC_API_KEY` が必要です)。
 - **秘密情報をコミットしない。** APIキーやトークンは `.env`(gitignore済み)か GitHub Secrets にのみ置きます。`.env.example` には空の値だけを書きます。
-- **`data/posted.json` を手で編集しない。** ワークフローが自動でコミットするファイルです。
+- **`npm run reel:publish` を `DRY_RUN=true` なしで実行しない。** 実際にInstagramへ投稿されます。
+- **`data/posted.json` / `data/reels.json` を手で編集しない。** ワークフローが自動でコミットするファイルです。
+- **リールは必ず人の確認を通す。** `reel-publish.yml` の「オーナーが承認ラベルを付けたときだけ投稿」という条件を外さないでください。
 - **作業ブランチを分ける。** エージェントごとに別ブランチで作業し、`main` に直接pushしないでください(例: Claude Code は `claude/...`、Codex は `codex/...`)。
 - **コンプライアンス上の制約を緩めない。** `summarize.ts` のプロンプトにある「断定的な投資助言・価格予測をしない」制限や、`config.ts` の免責文(`DISCLAIMER`)を削除・弱体化しないでください。変更が必要な場合は人間に確認を取ります。
 - ES Modules(`"type": "module"`)なので、相対importには `.js` 拡張子を付けます(例: `import { x } from "./config.js"`)。

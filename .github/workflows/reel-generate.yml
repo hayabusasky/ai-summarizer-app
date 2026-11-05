@@ -1,0 +1,72 @@
+name: Generate Chibi-Boss reel for review
+
+on:
+  schedule:
+    # 12:00 JST (UTC+9) == 03:00 UTC
+    - cron: "0 3 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: reel-generate
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install render dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg fonts-ipafont-gothic
+          pip install pillow
+
+      - run: npm install
+
+      - name: Write reel script with Claude
+        run: npm run reel:generate
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+      - name: Render preview video
+        run: python3 reel/make_reel.py out/reel/script.json out/reel/reel.mp4
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reel-preview
+          path: out/reel/reel.mp4
+          retention-days: 14
+
+      - name: Open review issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          gh label create reel --color C9A227 --description "チビボスのリール確認" --force
+          gh label create reel-approved --color 2EA043 --description "付けるとInstagramに投稿" --force
+          printf '\n---\n**プレビュー動画:** %s の Artifacts にある `reel-preview`\n' "$RUN_URL" >> out/reel/issue.md
+          gh issue create --title "$(cat out/reel/title.txt)" --body-file out/reel/issue.md --label reel
+
+      - name: Persist reel state
+        run: |
+          if ! git diff --quiet -- data/reels.json || [ -n "$(git status --porcelain -- data/reels.json)" ]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add data/reels.json
+            git commit -m "chore: update reel state [skip ci]"
+            git pull --rebase
+            git push
+          fi

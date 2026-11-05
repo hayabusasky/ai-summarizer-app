@@ -32,6 +32,9 @@ CHAR_BOTTOM = H - 130
 SUB_TOP, SUB_BOTTOM = 1000, 1190
 # 見出し領域
 HEAD_TOP, HEAD_BOTTOM = 260, 960
+# 横長の写真用レイアウト: 写真を上部に大きく置き、見出しはその下に出す
+PHOTO_TOP, PHOTO_H = 90, 600
+PHOTO_HEAD_TOP, PHOTO_HEAD_BOTTOM = 715, 975
 
 
 def font(size: int) -> ImageFont.FreeTypeFont:
@@ -110,15 +113,29 @@ def resolve_image(image: str | None, base: Path) -> Path | None:
     return None
 
 
-def scene_bg(image: str | None, base: Path) -> Image.Image:
+def scene_bg(image: str | None, base: Path) -> tuple[Image.Image, bool]:
+    """背景を作る。横長の画像なら写真レイアウト(True)を返す。"""
     path = resolve_image(image, base)
+    photo = False
     if path is None:
         bg = gradient_bg()
     else:
-        bg = cover(Image.open(path).convert("RGB"), W, H)
-        # 文字とキャラが読みやすいよう暗くする
-        bg = Image.blend(bg, Image.new("RGB", (W, H), (0, 0, 0)), 0.45)
-    return cover(bg, int(W * 1.12), int(H * 1.12))
+        img = Image.open(path).convert("RGB")
+        if img.width > img.height:
+            # ぼかして暗くした全面背景 + 上部にくっきりした写真
+            photo = True
+            bg = cover(img, W, H).filter(ImageFilter.GaussianBlur(40))
+            bg = Image.blend(bg, Image.new("RGB", (W, H), (0, 0, 0)), 0.6)
+            fg = cover(img, W, PHOTO_H)
+            bg.paste(fg, (0, PHOTO_TOP))
+            d = ImageDraw.Draw(bg)
+            for y in (PHOTO_TOP - 3, PHOTO_TOP + PHOTO_H):
+                d.rectangle([0, y, W, y + 3], fill=GOLD)
+        else:
+            bg = cover(img, W, H)
+            # 文字とキャラが読みやすいよう暗くする
+            bg = Image.blend(bg, Image.new("RGB", (W, H), (0, 0, 0)), 0.45)
+    return cover(bg, int(W * 1.12), int(H * 1.12)), photo
 
 
 # ---------- テキスト ----------
@@ -152,20 +169,26 @@ def fit_size(d: ImageDraw.ImageDraw, lines: list[str], size: int, max_w: int) ->
     return size
 
 
-def headline_layer(lines: list[str], note: str, footer: str) -> Image.Image:
+def headline_layer(lines: list[str], note: str, footer: str, photo: bool = False) -> Image.Image:
     layer = Image.new("RGBA", (W, H), (0, 0, 0, 0))
     d = ImageDraw.Draw(layer)
+    top, bottom = (PHOTO_HEAD_TOP, PHOTO_HEAD_BOTTOM) if photo else (HEAD_TOP, HEAD_BOTTOM)
     if lines:
         size = fit_size(d, lines, 96, W - 120)
+        # 領域の高さにも収まるように縮める
+        size = min(size, int((bottom - top) / (1.45 * len(lines))))
         lh = int(size * 1.45)
-        y = HEAD_TOP + (HEAD_BOTTOM - HEAD_TOP - lh * len(lines)) // 2
+        y = top + (bottom - top - lh * len(lines)) // 2
         for line in lines:
             draw_rich(d, y, line, size)
             y += lh
     if note:
         f = font(32)
-        d.text(((W - d.textlength(note, font=f)) / 2, HEAD_BOTTOM - 10), note, font=f,
-               fill=WHITE + (220,), stroke_width=2, stroke_fill=(0, 0, 0, 200))
+        if photo:  # 写真の右下に重ねる
+            x, y = W - d.textlength(note, font=f) - 28, PHOTO_TOP + PHOTO_H - 52
+        else:
+            x, y = (W - d.textlength(note, font=f)) / 2, HEAD_BOTTOM - 10
+        d.text((x, y), note, font=f, fill=WHITE + (230,), stroke_width=3, stroke_fill=(0, 0, 0, 230))
     if footer:
         f = font(28)
         d.text(((W - d.textlength(footer, font=f)) / 2, H - 70), footer, font=f,
@@ -202,12 +225,14 @@ def render_scene(i: int, scene: dict, poses: dict, base: Path, footer: str, work
     total = sum(float(l["secs"]) for l in lines)
     bg_p = work / f"bg{i}.png"
     head_p = work / f"head{i}.png"
-    scene_bg(scene.get("image"), base).save(bg_p)
-    headline_layer(scene.get("headline", []), scene.get("note", ""), footer).save(head_p)
+    bg, photo = scene_bg(scene.get("image"), base)
+    bg.save(bg_p)
+    headline_layer(scene.get("headline", []), scene.get("note", ""), footer, photo).save(head_p)
 
     inputs = ["-loop", "1", "-i", str(bg_p), "-loop", "1", "-i", str(head_p)]
     frames = int(total * FPS)
-    z = f"1+0.1*on/{frames}" if i % 2 == 0 else f"1.1-0.1*on/{frames}"
+    zr = 0.04 if photo else 0.1  # 写真レイアウトは上下が切れないよう控えめにズーム
+    z = f"1+{zr}*on/{frames}" if i % 2 == 0 else f"{1 + zr}-{zr}*on/{frames}"
     graph = [
         f"[0:v]zoompan=z='{z}':x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':d={frames}:s={W}x{H}:fps={FPS}[bg]",
         "[1:v]format=rgba,fade=in:st=0.2:d=0.5:alpha=1[hd]",

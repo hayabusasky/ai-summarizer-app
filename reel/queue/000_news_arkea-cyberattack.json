@@ -4,7 +4,7 @@
   "scenes": [
     {
       "image": "reel/backgrounds/000_news_arkea-cyberattack/1.jpg",
-      "image_prompt": "夜の欧州の銀行の重厚な石造りの外観、窓に青い光",
+      "image_prompt": "ユーザー提供: フランス国旗と「BANQUE」の銀行の外観",
       "headline": [
         "*銀行がハッキング*",
         "されて",
@@ -20,7 +20,7 @@
     },
     {
       "image": "reel/backgrounds/000_news_arkea-cyberattack/2.jpg",
-      "image_prompt": "暗い部屋で光るモニターに流れるデータと送金の矢印のイメージ",
+      "image_prompt": "ユーザー提供: 金貨と「約177億円」の警告パネル",
       "headline": [
         "フランスの銀行で",
         "*約1億ユーロ*",
@@ -42,7 +42,7 @@
     },
     {
       "image": "reel/backgrounds/000_news_arkea-cyberattack/3.jpg",
-      "image_prompt": "鍵穴に差し込まれた鍵が、デジタルの光の粒子に溶けていく抽象的なイメージ",
+      "image_prompt": "ユーザー提供: フードの人物と赤い鍵のモニター",
       "headline": [
         "*人的ミスではない*",
         "「巧妙な外部攻撃」"
@@ -62,7 +62,7 @@
     },
     {
       "image": "reel/backgrounds/000_news_arkea-cyberattack/4.jpg",
-      "image_prompt": "木の机の上に置かれた銀行の通帳とキャッシュカード、柔らかな光",
+      "image_prompt": "ユーザー提供: 「顧客に損失なし」の盾マークとカード",
       "headline": [
         "顧客の損失は",
         "*なし*",
@@ -83,7 +83,7 @@
     },
     {
       "image": "reel/backgrounds/000_news_arkea-cyberattack/5.jpg",
-      "image_prompt": "暗いベルベットの上の金の延べ棒、スポットライト",
+      "image_prompt": "ユーザー提供: 欧州の地図とフランス、金色の鍵",
       "headline": [
         "データだけに",
         "*頼りすぎない*"

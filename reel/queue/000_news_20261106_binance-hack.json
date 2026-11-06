@@ -4,7 +4,7 @@
   "scenes": [
     {
       "image": "reel/backgrounds/000_news_20261106_binance-hack/1.jpg",
-      "image_prompt": "暗い部屋で赤い警告色に染まった複数のトレーディング画面、チャートとデータ(文字は判読できない)",
+      "image_prompt": "ユーザー提供: 赤い鍵と「HACKED」の表示",
       "headline": [
         "*史上最大級*",
         "のハッキング",
@@ -21,7 +21,7 @@
     },
     {
       "image": "reel/backgrounds/000_news_20261106_binance-hack/2.jpg",
-      "image_prompt": "暗い背景に浮かぶ光るデジタルコインのイメージ、ひびが入って崩れかけている",
+      "image_prompt": "ユーザー提供: BINANCEのロゴの看板",
       "headline": [
         "仮想通貨取引所",
         "*バイナンス*",
@@ -42,7 +42,7 @@
     },
     {
       "image": "reel/backgrounds/000_news_20261106_binance-hack/3.jpg",
-      "image_prompt": "夜の暗い部屋で机の上に開かれた1台のノートパソコン、画面の光だけが周囲を照らす",
+      "image_prompt": "ユーザー提供: フードの人物とドクロのモニター",
       "headline": [
         "きっかけは",
         "*1台のノートPC*"
@@ -62,7 +62,7 @@
     },
     {
       "image": "reel/backgrounds/000_news_20261106_binance-hack/4.jpg",
-      "image_prompt": "暗い背景に、光るデジタルの粒子が画面の外へ一斉に流れ出していく抽象的なイメージ",
+      "image_prompt": "ユーザー提供: BINANCEの「取引再開」画面",
       "headline": [
         "再開した日に",
         "*約5700億円*",
@@ -83,7 +83,7 @@
     },
     {
       "image": "reel/backgrounds/000_news_20261106_binance-hack/5.jpg",
-      "image_prompt": "黒いベルベットの上の金の延べ棒と、その横に置かれた光るデジタルコインのホログラム",
+      "image_prompt": "ユーザー提供: ビットコインとイーサリアムの金色のコイン、下落チャート",
       "headline": [
         "仮想通貨には",
         "*形がない*"
